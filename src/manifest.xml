@@ -1,0 +1,17 @@
+<manifest projecttype="ACCOUNTCUSTOMIZATION">
+  <projectname>EPTO Suitelet</projectname>
+  <frameworkversion>1.0</frameworkversion>
+  <dependencies>
+    <features>
+      <feature required="true">CUSTOMRECORDS</feature>
+      <feature required="true">CUSTOMSEGMENTS</feature>
+      <feature required="true">EXTREMELIST</feature>
+      <feature required="true">INBOUNDSHIPMENT</feature>
+      <feature required="true">LOCATIONS</feature>
+    </features>
+    <objects>
+      <object>customrole1179</object>
+      <object>customrole1178</object>
+    </objects>
+  </dependencies>
+</manifest>

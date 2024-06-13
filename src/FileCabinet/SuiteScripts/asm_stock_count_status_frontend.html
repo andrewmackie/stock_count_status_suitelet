@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Stock Count Status</title>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+        <meta name="robots" content="noindex">
+        <meta name="robots" content="nofollow">
+        <meta name="robots" content="noarchive">
+        <!-- Refresh every 83000s (instead of 86,400 == 24hrs) to have a different refresh time
+                each day, not the same time every day) -->
+        <meta http-equiv="refresh" content="83000">
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css">
+        <link rel="preload" as="style" onload="this.rel='stylesheet'" href="https://cdn.jsdelivr.net/npm/vuetify@3.5.1/dist/vuetify.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/vuetify@3.5.1/dist/vuetify.min.js"></script>
+
+        <style scoped>
+            html {
+                /* Set rem size */
+                font-size: 15px;
+            }
+            body {
+                padding: 0;
+                background-color: #eeeeee;
+            }
+            h1 { margin-bottom: 1.3rem;  font-size: 1.5rem;}
+            h2 {
+                margin-top: 1rem;
+                margin-bottom: 0.7rem;
+                font-size: 1.3rem;
+            }
+            h1 + h2 {margin-top: 2rem;}
+            h1, h2, h3, h4, h5 {
+              -webkit-user-select: none; /* Safari */
+              -ms-user-select: none; /* IE 10 and IE 11 */
+              user-select: none; /* Standard syntax */
+            }
+            table {
+                background-color: white;
+                border-collapse: collapse;
+            }
+            th, td {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.5rem;
+                border: 1px solid #aaa;
+            }
+            #header {
+                background-color: #ddd;
+                border-bottom: 1px solid #ccc;
+                padding: 0.6rem 0 1.2rem 0;
+                margin-bottom: 1.5rem;
+            }
+            .allocation {
+                padding: 1rem 0 0 0;
+                text-align: center;
+                border: none;
+                background-color: #f6f6f6;
+                height: 10rem;
+                font-size: 2.5rem;
+                color: #999;
+            }
+            .allocation .destination {
+                font-weight: bold;
+                margin-bottom: 0.66rem;
+            }
+            .allocation.active {
+                background-color: #ffffff !important;
+            }
+            .allocation.active {
+                color: #000;
+            }
+            .sales-order .v-field__field,
+            .allocation.active.salesorder {
+                background-color: #f8e1e1 !important;
+            }
+            .putaway .v-field__field,
+            .allocation.active.putaway {
+                background-color: #dfdffc !important;
+            }
+            .v-field__field {
+                border-radius: 5px;
+            }
+            .selected {
+                background-color: #f3fdf3;
+                border: 2px solid green;
+            }
+            .column-text {
+                font-size: 1.3rem;
+                text-align: right;
+                padding-left: 0.5rem;
+                margin-right: -0.5rem;
+              }
+            /* Limit the height of the Vuetify text fields (balance with padding)
+            .v-input__control {
+                margin-top: 0.2rem;
+            }
+            .v-field__field {
+                height: 3.33rem;
+            }
+            .v-field__input {
+                padding: 0rem 0.5rem 0.5rem 0.5rem;
+                text-align: center;
+                margin-bottom: 0;
+            }
+            .v-input__details {
+                display: none;
+            }*/
+            #from-bench-id,
+            #from-ib-shipment,
+            #to-so-bin,
+            #to-pa-bin,
+            #sku-id,
+            #quantity-other {
+                font-size: 1.4rem;
+                font-weight: bold;
+            }
+            #sku-id {
+                width: 10em;
+                font-size: 1.8rem;
+            }
+            #from-ib-shipment {
+                width: 11rem;
+            }
+            #to-so-bin,
+            #to-pa-bin{
+                width: 10rem;
+            }
+            #from-bench-id {
+                width: 5rem;
+            }
+            #quantity-other {
+                width: 5.5rem;
+            }
+            .no-select {
+              -webkit-user-select: none; /* Safari */
+              -ms-user-select: none; /* IE 10 and IE 11 */
+              user-select: none; /* Standard syntax */
+            }
+            .alert-multi {
+                margin-bottom: 1rem;
+            }
+            .v-alert {
+                background-color: #fff;
+            }
+            .v-alert__content {
+                font-size: 1.15rem;
+            }
+            .v-alert__content .v-alert-title {
+                font-size: 1.3rem;
+                margin-bottom: 0.3rem;
+            }
+            #switch-header {
+                position: absolute;
+                z-index: 9999;
+                right: 1rem;
+                top: 1rem;
+            }
+            .pushdown {
+                margin-top: 5rem;
+            }
+            .icon-button {
+                padding: 5px;
+                cursor: pointer;
+                border-radius: 5px;
+                width: 50px;
+                height: 50px;
+                margin-left: 0.5rem;
+            }
+            .icon-button:hover {
+                background-color: rgba(0,0,0,0.2);
+            }
+            .icon-button-on {
+                background-color: rgba(0,0,0,0.15);
+            }
+            .sku-history {
+                background-color: #fff;
+            }
+            .sku-history div {
+                padding: 0.2rem;
+            }
+            .sku-history div span:nth-child(1) {
+                width: 20rem;
+                margin-right: 0.5rem;
+            }
+            .sku-history div span:nth-child(2) {
+                width: 30rem;
+                margin-right: 0.5rem;
+            }
+            tr.data-row {
+                font-size: 1rem;
+                cursor: pointer;
+            }
+            tr.data-row td:first-of-type {
+                text-decoration: underline;
+            }
+            .lighter-text {
+                color: #888;
+            }
+            .default {
+                background-color: #e0e0e0;
+            }
+            .complete {
+                background-color: #e8fae8;
+            }
+            .problem {
+                background-color: #fae8e8;
+            }
+            .error {
+                background-color: #fdd6d6;
+            }
+            .no-wrap {
+                text-wrap: none;
+            }
+        </style>
+    </head>
+    <body>
+    <div id="app">
+
+        <!-- SELECT LOCATION AND COUNTS + GET STATUS -->
+        <v-container>
+            <h1>Stock Count Status</h1>
+            <v-row
+                style="padding-top: 15px"
+            >
+                <v-col
+                    class="v-col-auto"
+                    style="padding-top: 0;"
+                >
+                    <h3>Location</h3>
+                    <v-autocomplete
+                        :items="data.server.locations?.locationList || []"
+                        bg-color="white"
+                        density="compact"
+                        style="width: 450px"
+                        v-model="data.client.locationId"
+                        variant="outlined"
+                    ></v-autocomplete>
+                </v-col>
+            </v-row>
+            <v-row>
+                <v-col
+                    class="v-col-auto"
+                    style="padding-top: 0;"
+                    v-if="data.ui.bohCountList?.length > 1"
+                >
+                    <h3>Back of House</h3>
+                    <v-autocomplete
+                        :items="data.ui.bohCountList"
+                        bg-color="white"
+                        density="compact"
+                        style="width: 550px"
+                        v-model="data.client.boh"
+                        variant="outlined"
+                    ></v-autocomplete>
+                </v-col>
+                <v-col
+                    v-if="data.ui.fohCountList?.length > 1"
+                    class="v-col-auto"
+                    style="padding-top: 0;"
+                >
+                    <h3>Front of House</h3>
+                    <v-autocomplete
+                        :items="data.ui.fohCountList"
+                        bg-color="white"
+                        density="compact"
+                        style="width: 550px"
+                        v-model="data.client.foh"
+                        variant="outlined"
+                    ></v-autocomplete>
+                </v-col>
+            </v-row>
+            <v-row style="margin-top: -5px">
+                <v-col
+                    v-if="data.client?.foh && data.ui.fohCountList?.length || data.client?.boh && data.ui.bohCountList?.length"
+                    class="v-col-auto"
+                    style="padding-top: 0;"
+                >
+                    <div>
+                        <v-btn
+                            color="green-darken-1"
+                            @click="getHeadersThenDetails()"
+                            style="margin-top: 10px;"
+                        >Get Status</v-btn>
+                    </div>
+                </v-col>
+                <v-col class="v-col-auto" style="height: 70px;">
+                    <!-- Loading icon -->
+                    <div
+                        v-if="isCurrentlyProcessing"
+                    >
+                        <!-- By Sam Herbert (@sherb), for everyone. More @ http://goo.gl/7AJzbL -->
+                        <svg width="35" height="35" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="green">
+                            <g fill="none" fill-rule="evenodd">
+                                <g transform="translate(1 1)" stroke-width="2">
+                                    <circle stroke-opacity=".25" cx="18" cy="18" r="18"/>
+                                    <path d="M36 18c0-9.94-8.06-18-18-18">
+                                        <animateTransform
+                                            attributeName="transform"
+                                            dur="1s"
+                                            from="0 18 18"
+                                            repeatCount="indefinite"
+                                            to="360 18 18"
+                                            type="rotate"/>
+                                    </path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                </v-col>
+                <v-col class="v-col-auto" style="text-align: left; margin-top: 3px;">
+                <!-- Status message -->
+                <div
+                    class="lighter-text"
+                    style="max-width: 750px; margin-top: -5px;"
+                    v-html="data.status.message"
+                    v-if="data.status.message"
+                ></div>
+                </v-col>
+            </v-row>
+            <v-row>
+                <v-col class="v-col-auto" style="text-align: left; margin-top: 3px;">
+                <!-- Status message -->
+                    <div
+                        class="lighter-text"
+                    >
+                        Note: Parent count results shown below do NOT incorporate recount results (use
+                        <a href="https://5726127.app.netsuite.com/app/site/hosting/scriptlet.nl?script=2943&deploy=1&compid=5726127" target="_blank">Stock Count Results</a>
+                        instead and 'Export Results').
+                    </div>
+                </v-col>
+            </v-row>
+            <!--<pre>{{ data.status }}</pre>-->
+        </v-container>
+
+        <!--Estimate 2179:  <pre>{{ countResultEstimate('2179') }}</pre>-->
+        <!--Estimate 2286: <pre>{{ countResultEstimate('2286') }}</pre>-->
+
+            <v-container>
+                <div
+                        v-if="Object.keys(data.server.count.headers).length > 0"
+                    >
+                        <v-container
+                            v-for="(parentResult, index) in sidesOfHouse.filter((parentCountId) => data.server.count.results[parentCountId]).map((parentCountId) => data.server.count.results?.[parentCountId])"
+                            :key="index"
+                        >
+                            <h3>{{ parentResult.name }}</h3>
+                            <!--<div class="lighter-text" style="margin-top: 0.5rem;">Note: Main count variances are not Recount variances and Inventory Adjustments do not update the original count variances).</div>-->
+                            <table style="margin-top: 1rem;">
+                                <tr>
+                                    <th>Count</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th># Items</th>
+                                    <th># Counted</th>
+                                    <th>% Counted</th>
+                                    <th>Unders $</th>
+                                    <th>Overs $</th>
+                                    <th>Net Var. $</th>
+                                    <th>Errors</th>
+                                </tr>
+                                <tr
+                                    :class="{complete: parentCountIsComplete(parentResult?.id), problem: parentCountIsComplete(parentResult?.id) === false}"
+                                    :key="parentResult.id"
+                                    class="default"
+                                >
+                                    <td><a :href="parentResult.link" target="_blank">{{ parentResult.id }}</a></td>
+                                    <td>{{ parentResult.name }}</td>
+                                    <td>{{ parentResult.status }}</td>
+                                    <td>{{ asNumber(parentResult.number) }}</td>
+                                    <td>{{ asNumber(parentResult.counted.number) }}</td>
+                                    <td>{{ asPercent(parentResult.counted.percent) }}</td>
+                                    <td>{{ asCurrency(parentResult.variance.under.amount) }}</td>
+                                    <td>{{ asCurrency(parentResult.variance.over.amount) }}</td>
+                                    <td>{{ asCurrency(parentResult.variance.net.amount) }}</td>
+                                    <td :class="{error: parentResult.errors.hasErrors}">
+                                        {{ asNumber(parentResult.errors.number) }}
+                                    </td>
+                                </tr>
+                            </table>
+
+                        <div style="margin: 1.5rem auto 2rem 2rem">
+                            <h4>Recounts</h4>
+                            <table style="margin-top: 1rem;">
+                                <tr>
+                                    <th>Count</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th># Items</th>
+                                    <th># Counted</th>
+                                    <th>% Counted</th>
+                                    <th>Unders $</th>
+                                    <th>Overs $</th>
+                                    <th>Net Var. $</th>
+                                    <th>Errors</th>
+                                </tr>
+                                <tr
+                                    :class="{complete: result.counted.complete, problem: result.counted.complete === false}"
+                                    :key="result.id"
+                                    class="default"
+                                    v-for="result in data.server.count?.headers?.[sidesOfHouse?.[index]]?.recounts?.filter((recountId) => recountId in data.server.count.results).map((recountId) => data.server.count.results[recountId])"
+                                >
+                                    <td><a :href="result.link" target="_blank">{{ result.id }}</a></td>
+                                    <td>{{ result.name }}</td>
+                                    <td>{{ result.status }}</td>
+                                    <td>{{ asNumber(result.number) }}</td>
+                                    <td>{{ asNumber(result.counted.number) }}</td>
+                                    <td>{{ asPercent(result.counted.percent) }}</td>
+                                    <td>{{ asCurrency(result.variance.under.amount) }}</td>
+                                    <td>{{ asCurrency(result.variance.over.amount) }}</td>
+                                    <td>{{ asCurrency(result.variance.net.amount) }}</td>
+                                    <td :class="{error: result.errors.hasErrors}">
+                                        {{ asNumber(result.errors.number) }}
+                                    </td>
+                                </tr>
+                            </table>
+                            </div>
+                        </v-container>
+                </div>
+            </v-container>
+
+        <!--<pre>status: {{ data.status }}</pre>-->
+        <!--<pre>headers: {{ data.server.count.headers }}</pre>-->
+        <!--<pre>data.client: {{ data.client }}</pre>-->
+        <!--<pre>data.server: {{ data.server }}</pre>-->
+        <!--<pre>{{ data.rfsmart.validations }}</pre>-->
+        <!--<pre>{{ data.server.count.results }}</pre>
+        <hr>
+        Items:
+        <pre>{{ data.server.count.items }}</pre>-->
+
+    </div>
+    </body>
+</html>
+
+<script>
+
+    const { computed, createApp, defineComponent, onMounted, nextTick, reactive, watch } = Vue
+    const { createVuetify } = Vuetify
+
+    const vuetify = createVuetify()
+
+    const app = createApp({
+
+        setup() {
+
+            const data = reactive({
+                status: {
+                    currentRequests: { // Tracks the number of incomplete async requests
+                        headers: [],
+                        details: [],
+                        sections: []
+                    },
+                    successfulRequests: { // Tracks the number of incomplete async requests
+                        headers: [],
+                        details: [],
+                        sections: []
+                    },
+                    recounts: {
+                        previewing: false
+                    },
+                    message: 'Loading JavaScript ...',
+                    errorMessage: null,
+                    userHasRequested: {
+                        details: false,
+                        outcomes: false,
+                    },
+                    creatingRecounts: false,
+                },
+                client: {
+                    locationId: null,
+                    boh: null,
+                    foh: null,
+                    tab: 'counts',
+                    recountsMinVarianceQty: 2,
+                    recountsMinVarianceAmount: 10,
+                    recountsMaxLinesPerRecount: 20,
+                },
+                server: {
+                    locations: {
+                        locationList: [{title: '', value: null}],
+                        locationsById: {},
+                        locationsByName: {}
+                    },
+                    count: {
+                        headers: {},
+                        details: {},
+                        sections: {},
+                        results: {},
+                    },
+                    items: {},
+                },
+                rfsmart: {
+                    // 0-based statuses gleaned from look at Stock Count Headers
+                    status: ['', 'Open', 'Started', 'Complete', 'Closed', 'Processing', 'Queued'],
+                    validations: {
+
+                    }
+                },
+                ui: {
+                    bohCountList: [],
+                    fohCountList: []
+                }
+            })
+
+            let urlOrigin = 'https://5726127.app.netsuite.com'
+            let urlScript = `https://5726127.app.netsuite.com/app/site/hosting/scriptlet.nl?script=2940&deploy=1`
+
+            onMounted(() => {
+                try {
+                    urlOrigin = window.location.origin
+                } catch (e) {
+                    console.log(e)
+                }
+
+                urlScript = `${urlOrigin}/app/site/hosting/scriptlet.nl?script=2940&deploy=1`
+
+                // Retrieve local storage
+                // Don't get the boh and foh yet - wait for the counts data to be received first
+                const localStorageKeys = ['locationId', 'tab', 'recountsMinVarianceQty', 'recountsMinVarianceAmount', 'recountsMaxLinesPerRecount']
+                localStorageKeys.forEach((key) => {
+                    const value = window.localStorage.getItem(`stockCountResults.${key}`)
+                    if (value) {
+                        data.client[key] = JSON.parse(value);
+                    }
+                })
+                fetchRecords({requestType: 'locations'})
+                nextTick(() => {
+                    if (data.client.locationId) {
+                        getCountHeaders()
+                    }
+                })
+            })
+
+            const sidesOfHouse = computed(() => {
+                let sides = []
+                if (data.client.boh) {
+                    sides.push(data.client.boh)
+                }
+                if (data.client.foh) {
+                    sides.push(data.client.foh)
+                }
+                return sides
+            })
+
+            function resetCountDetails() {
+                data.server.count.details = {}
+                data.server.count.sections = {}
+                //data.server.count.results = {}
+                data.rfsmart.validations = {}
+                data.server.items = {}
+                data.status.currentRequests.details = []
+                data.status.currentRequests.sections = []
+                data.status.successfulRequests.details = []
+                data.status.successfulRequests.sections = []
+            }
+
+            function resetCountHeaders() {
+                data.status.currentRequests.headers = []
+                data.status.successfulRequests.headers = []
+                data.server.count.headers = {
+                    graph: {},
+                    foh: [],
+                    boh: []
+                }
+                resetCountDetails()
+            }
+
+            function renderDetailsBasedVariance(countId) {
+                // A directed count is based only on the counted records
+                // An undirected count also includes the
+                const countedRecords = (data.server.count.details[recountId] || []).filter((detail) => detail.count)
+                data.server.count.headers[countId]?.variance?.net
+            }
+
+            // The encapsulation around data.client allows oldValue to work
+            watch(() => ({...data.client}), (newValue, oldValue) => {
+                    const diff = Object.keys(newValue).filter((key) => newValue[key] !== oldValue[key]).reduce((accumulator, key) => accumulator += `${key}: ${oldValue[key]} -> ${newValue[key]}, `, '',)
+                    console.log(`data.client: ${diff}`)
+                    // Save client data to location storage
+                    if (newValue.locationId !== oldValue.locationId) {
+                        window.localStorage.setItem(`stockCountResults.locationId`, JSON.stringify(newValue.locationId))
+                        nextTick(() => {
+                            getCountHeaders()
+                        })
+                        if (oldValue.locationId) {
+                            // This is not changed from null, it's changed from another location
+                            // Therefore clear the boh and foh
+                            data.client.boh = null;
+                            data.client.foh = null;
+                            window.localStorage.removeItem('stockCountResults.boh')
+                            window.localStorage.removeItem('stockCountResults.foh')
+                        }
+                    }
+                    ['recountsMinVarianceQty', 'recountsMinVarianceAmount', 'recountsMaxLinesPerRecount', 'tab'].forEach((key) => {
+                        if (newValue[key] !== oldValue[key]) {
+                            window.localStorage.setItem(`stockCountResults.${key}`, JSON.stringify(newValue[key]))
+                        }
+                    })
+                },
+                {deep: true}
+            )
+
+            const isCurrentlyProcessing = computed(() => {
+                let isProcessing = false
+                Object.keys(data.status.currentRequests).forEach(function (requestType) {
+                    const unfulfilledRequests = data.status.currentRequests[requestType].filter((id) => !data.status.successfulRequests[requestType].includes(id)) || []
+                    if (unfulfilledRequests.length > 0) {
+                        isProcessing = true;
+                    }
+                })
+                return isProcessing
+            })
+
+            const allDetailsReceived = computed(() => {
+                return Object.keys(data.server.count.details).length > 0 &&
+                    Object.keys(data.server.count.details).length === Object.keys(data.server.count.headers).length
+            })
+
+            watch(() => ({ ...data.status.successfulRequests }), (newValue, oldValue) => {
+                // Get the sections when the details are all received (asynchronously
+                let statusMessage = ''
+                Object.keys(newValue).forEach(function (requestType) {
+                    let currentRequestLength = data.status.currentRequests[requestType].length
+                    let successfulLength = data.status.successfulRequests[requestType].length
+                    if (currentRequestLength === 0) { return }
+                    if (currentRequestLength === successfulLength) { return }
+                    const unfulfilledRequests = data.status.currentRequests[requestType].filter((id) => !newValue[requestType].includes(id)) || []
+                    if (unfulfilledRequests.length > 0) {
+                        let br = statusMessage.length ? '<br>' : ''
+                        statusMessage += `${br}Getting count ${requestType}: ${unfulfilledRequests.join(', ')} ...`
+                    }
+                })
+                data.status.message = statusMessage
+            }, {deep: true})
+
+
+            function fetchRecords(criteria, endCurrentlyProcessing=true) {
+                const criteriaAsParams = Object.keys(criteria).map(function(key) {
+                  return key + '=' + encodeURIComponent(criteria[key]);
+                }).join('&');
+                let link = '?';
+                if (urlScript.includes('?')) { link = '&'}
+                const serverURL = `${urlScript}${link}${criteriaAsParams}`;
+                //console.log(serverURL);
+                fetch(serverURL)
+                    .then(response => response.json())
+                    .then(responseData => {
+                        const requestType = criteria.requestType
+                        if (requestType === 'headers') {
+                            // Set default results BEFORE saving the header data
+                            data.server.count.headers = responseData.headers
+                            Object.keys(data.server.count.headers).forEach((countId) => {
+                                data.server.count.results[countId] = countResultDefault(countId)
+                            })
+                            data.ui.bohCountList = responseData.bohCountList
+                            data.ui.fohCountList = responseData.fohCountList
+                            data.status.successfulRequests.headers = ['All']
+                            // Get the user's selected counts IF they appear in the counts data, otherwise delete them
+                            nextTick(() => {
+                                const localStorageKeys = ['boh', 'foh']
+                                localStorageKeys.forEach((key) => {
+                                    const storedCountId = window.localStorage.getItem(`stockCountResults.${key}`)
+                                    if (storedCountId && Object.keys(responseData.headers).includes(storedCountId)) {
+                                        data.client[key] = storedCountId;
+                                    }
+                                })
+                            })
+                        } else if (requestType === 'sections') {
+                            /* Sections are run before getting the details, so that the sections can be inserted into
+                               details before the details are inserted into the items. */
+                            data.server.count.sections = responseData;
+                            data.status.successfulRequests.sections.push('Front of House')
+                            // Get the user's selected counts IF they appear in the counts data, otherwise delete them
+                        } else if (requestType === 'details') {
+                            // Record count results by countId
+                            // If it's a child, however, send the data to the parent
+                            const countId = criteria.countId
+                            const parentCountId = criteria.parentCountId
+                            const details = responseData.details
+                            data.server.count.headers[countId].detailLastModifiedBy = responseData.lastModifiedBy;
+                            data.server.count.details[countId] = details;
+                            data.server.count.results[countId] = countResultEstimate(countId)
+                            const validationCountId = parentCountId || countId
+                            // Not doing anything with the data at the moment, so don't hassle the server
+                            // stock count headers show the same info ... ?
+                            //if (!(validationCountId in data.rfsmart.validations)) {
+                            //    validateStockCount(validationCountId)
+                            //}
+
+                            // If parent, also copy / concat with parent
+                            if (parentCountId) {
+                                data.server.count.headers[parentCountId].detailLastModifiedBy = responseData.lastModifiedBy;
+                                if (!Object.keys(data.server.count.details).includes(parentCountId)) {
+                                    data.server.count.details[parentCountId] = details;
+                                } else {
+                                    data.server.count.details[parentCountId] = data.server.count.details[parentCountId].concat(details);
+                                }
+                                data.server.count.results[parentCountId] = countResultEstimate(parentCountId)
+                            } else {
+                            }
+                            data.status.successfulRequests.details.push(countId)
+                        } else {
+                            data.server[requestType] = responseData;
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error.toString());
+                        data.errorMessage = error.toString();
+                    })
+                    .finally(() => {
+
+                    })
+            }
+
+            function countResultDefault (countId) {
+                // Default Values
+                const result = {}
+                result.id = countId
+                result.name = data.server.count.headers?.[countId]?.parent ? `[Child of ${data.server.count.headers[countId].parent}] ` : data.server.count.headers[countId].name
+                result.source = 'default'
+                result.confidence = ''
+                result.link = `${urlOrigin}/app/site/hosting/scriptlet.nl?script=2924&deploy=1&compid=5726127&custparamRecType=customrecord_rfs_physicalcountheader&custparamId=${countId}&whence=`
+                result.status = data.rfsmart.status[data.server.count.headers[countId]?.status || 0]
+                result.number = 0
+                result.counted = {}
+                result.counted.number = 0
+                result.counted.percent = 0
+                result.counted.complete = null
+                result.variance = {under: {}, over: {}, net: {}}
+                result.variance.number = 0
+                result.variance.under.qty = 0
+                result.variance.under.amount = 0
+                result.variance.over.qty = 0
+                result.variance.over.amount = 0
+                result.variance.net.qty = 0
+                result.variance.net.amount = 0
+                result.errors = {}
+                result.errors.number = 0
+                result.errors.hasErrors = 0
+                result.errors.list = []
+                return result
+            }
+
+            // Estimated results per COUNT (we also need results per ITEM)
+            function countResultEstimate (countId) {
+                // Details-based and count-centric (not item-centric) results. Cannot be combined - must go to item level to do that.
+                const result = {}
+                result.id = countId
+                result.name = data.server.count.headers?.[countId]?.parent ? `[Child of ${data.server.count.headers[countId].parent}] ` : data.server.count.headers[countId].name
+                result.source = 'details'
+                result.confidence = 'estimate'
+                result.link = `${urlOrigin}/app/site/hosting/scriptlet.nl?script=2924&deploy=1&compid=5726127&custparamRecType=customrecord_rfs_physicalcountheader&custparamId=${countId}&whence=`
+                result.status = data.rfsmart.status[data.server.count.headers[countId]?.status || 0]
+                result.number = data.server.count.details[countId].length // asNumber
+                result.counted = {}
+                result.counted.number = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count)).length // asNumber
+                result.counted.percent = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count)).length / (data.server.count.details[countId] || [1]).length // asPercent
+                result.counted.complete = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count)).length === data.server.count.details[countId].length
+                result.variance = {under: {}, over: {}, net: {}}
+                result.variance.number = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count) && detail.diff !== 0).length
+                result.variance.under.qty = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count) && detail.diff < 0).reduce((accumulator, detail) => accumulator += detail.diff, 0)
+                result.variance.under.amount = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count) && detail.diff < 0).reduce((accumulator, detail) => accumulator += detail.diff * detail.price, 0)
+                result.variance.over.qty = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count) && detail.diff > 0).reduce((accumulator, detail) => accumulator += detail.diff, 0)
+                result.variance.over.amount = data.server.count.details[countId].filter((detail) => Number.isFinite(detail.count) && detail.diff > 0).reduce((accumulator, detail) => accumulator += detail.diff * detail.price, 0)
+                result.variance.net.qty = result.variance.over.qty + result.variance.under.qty
+                result.variance.net.amount = result.variance.over.amount + result.variance.under.amount
+                result.errors = {}
+                result.errors.number = data.server.count.details[countId].filter((detail) => detail?.hasError)?.length
+                result.errors.hasErrors = !!result.errors.number
+                result.errors.list = data.server.count.details[countId].filter((detail) => detail?.hasError)
+                // Make the same call that is used by RF-SMART to validate a count
+                // Not doing anything with the data (and errors can be seen on the count)
+                //if (result.errors.number && !(countId in data.rfsmart?.validations)) {
+                //    validateStockCount(countId)
+                //}
+            return result
+        }
+
+
+            function validateStockCount(countId) {
+                const validateURL = `${urlOrigin}/app/site/hosting/restlet.nl?script=customscript_rfs_invtreport_api&deploy=customdeploy_rfs_invtreport_api`;
+                const payload = {
+                    "module": "../Functions/check_stockcount",
+                    "command": "validateStockCount",
+                    "record": {
+                        "countid": countId
+                    }
+                }
+                console.log(`Requesting that RF-SMART validate count ${countId} ...`);
+                fetch(validateURL, {
+                    method: 'POST',
+                    headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                    .then(response => response.json())
+                    .then(responseData => {
+                       data.rfsmart.validations[countId] = responseData
+                    })
+                    .catch(error => {
+                        console.error(error.toString());
+                        data.errorMessage = error.toString();
+                    })
+                    .finally(() => {
+                    })
+            }
+
+
+            function parentCountIsComplete(parentCountId) {
+                // Not complete until all children's data is complete
+                if (data.server.count.results === {} || !data.server.count.results) {
+                    return false
+                }
+                if (!data.server.count.headers[parentCountId]?.children?.length) {
+                    return data.server.count?.results[parentCountId]?.counted?.complete || false
+                } else {
+                    // Aggregate the completed state of the child counts
+                    const children = data.server.count.headers[parentCountId].children
+                    const completes = children?.map((countId) => data.server.count.results[countId]?.counted?.complete)
+                    // Tri-state null is default
+                    if (completes.includes(null)) { return null }
+                    const answer = completes?.reduce((accumulator, complete) => accumulator && complete, true) || false
+                    return answer
+                }
+            }
+
+            function getCountHeaders() {
+                resetCountHeaders();
+                fetchRecords({requestType: 'headers', locationId: data.client.locationId})
+                data.status.currentRequests.headers = ['All']
+                // Because it's a single request, we need to kick off the status manually
+                data.status.message = `Getting Headers: All ...`
+
+            }
+
+            function getCountDetails() {
+                //console.log('getCountDetails()')
+                const houseKeys = ['boh', 'foh']
+                houseKeys.forEach((key) => {
+                    window.localStorage.setItem(`stockCountResults.${key}`, data.client[key])
+                })
+                resetCountDetails()
+                /* Starting with the selected count(s), get the results for the counts in the graph */
+                const topCountIds = []
+                if (data.client.boh) { topCountIds.push(data.client.boh)}
+                if (data.client.foh) { topCountIds.push(data.client.foh)}
+                topCountIds.forEach(function (topCountId) {
+                    // If there are no children (parent counts split into smaller parts for NetSuite), get the results
+                    if (!data.server.count.headers[topCountId]?.children.length) {
+                        // There are no children for this count, get its results directly
+                        fetchRecords({requestType: 'details', countId: topCountId}, false)
+                        data.status.currentRequests.details.push(topCountId)
+                    } else {
+                        // This count has children - it was split up into child counts and the results are there
+                        // The parent will be filled too
+                        data.server.count.headers[topCountId]?.children.forEach(function (childCountId) {
+                            fetchRecords({requestType: 'details', countId: childCountId, parentCountId: topCountId}, false)
+                            data.status.currentRequests.details.push(childCountId)
+                        })
+                    }
+                    // Now the recounts (which all have children, regardless of their size)
+                    const recounts = data.server.count.headers[topCountId].recounts
+                    recounts.forEach(function (recountId) {
+                        // recounts NEVER have data in their own count (and this line is overwriting data)
+                        //fetchRecords({requestType: 'details', countId: recountId}, false)
+                        data.server.count.headers[recountId].children.forEach(function (childCountId) {
+                            fetchRecords({requestType: 'details', countId: childCountId, parentCountId: recountId}, false)
+                            data.status.currentRequests.details.push(childCountId)
+                        })
+                    })
+                })
+                //console.log('Requested:', data.status.currentRequests.details)
+            }
+
+            function getHeadersThenDetails() {
+                // To see new counts (recounts) when pressing 'Get Status', we must get headers first.
+                // But because it's an async call, we need to wait for the promise ...
+                resetCountHeaders();
+                data.status.currentRequests.headers = ['All']
+                const criteria = {requestType: 'headers', locationId: data.client.locationId}
+                const criteriaAsParams = Object.keys(criteria).map(function(key) {
+                    return key + '=' + encodeURIComponent(criteria[key]);
+                }).join('&');
+                let link = '?';
+                if (urlScript.includes('?')) { link = '&'}
+                const serverURL = `${urlScript}${link}${criteriaAsParams}`;
+                //console.log(serverURL);
+                fetch(serverURL)
+                    .then(response => response.json())
+                    .then(responseData => {
+                        data.server.count.headers = responseData.headers
+                        Object.keys(data.server.count.headers).forEach((countId) => {
+                            data.server.count.results[countId] = countResultDefault(countId)
+                        })
+                        data.ui.bohCountList = responseData.bohCountList
+                        data.ui.fohCountList = responseData.fohCountList
+                        data.status.successfulRequests.headers = ['All']
+                            // Get the user's selected counts IF they appear in the counts data, otherwise delete them
+                            nextTick(() => {
+                                const localStorageKeys = ['boh', 'foh']
+                                localStorageKeys.forEach((key) => {
+                                    const storedCountId = window.localStorage.getItem(`stockCountResults.${key}`)
+                                    if (storedCountId && Object.keys(responseData.headers).includes(storedCountId)) {
+                                        data.client[key] = storedCountId;
+                                    }
+                                })
+                            })
+                        // Now we can get to why we're really here ...
+                        getCountDetails()
+                    })
+                    .catch(error => {
+                        console.error(error.toString());
+                        data.errorMessage = error.toString();
+                    })
+                    .finally(() => {
+
+                    })
+            }
+
+
+            function getCountSections() {
+                /*
+                    Gets Section records for all counts in the FoH and inserts them into the count detail.cou
+                    Run after getCountDetails() has completed (based on data.status.currentRequests.details)
+                */
+                // Get FoH count list
+                const countIds = [data.client.foh].concat(data.server.count.headers[data.client.foh].recounts)
+                console.log('countIds: ', countIds)
+                fetchRecords({requestType: 'sections', countIds: encodeURIComponent(countIds)})
+                data.status.currentRequests.sections = ['Front of House']
+                // Because it's a single request, we need to kick off the status manually
+                data.status.successfulRequests.sections = []
+                data.status.message = `Getting Sections: Front of House ...`
+            }
+
+            // TODO - Decide whether IAs should be column-based (all in the same column) - would make sense
+
+            let ItemFromDetail = function (side, type, detail) {
+                /*
+                    For storing item detail from count details and IAs
+                    Side is 'boh' or 'foh;
+                    Type:
+                        U: Undirected Count for this side (the initial undirected / parent count for the side
+                        R: Recount(s) which follow the parent on that side
+                        IA: Inventory Adjustments
+                 */
+
+                // A function for adding detail (RFS Stock Count Detail Records) and Inv Adjustments incrementally
+                this.addDetailAndIA = function (side, type, detail) {
+                    // Check that the data structure is built (JIT - we don't want keys for data which does not exist)
+                    if (!this.result) {
+                        this.result = {}
+                    }
+                    if (!this.result[side]) {
+                        this.result[side] = {}
+                    }
+                    if (!this.result[side][type]) {
+                        this.result[side][type] = {
+                            // this.determineOutcome will add an outcome key here
+                            details: [],
+                        }
+                    }
+                    // Store the new detail
+                   this.result[side][type].details.push(detail)
+                    // Collect new iaIDs
+                    if (detail.iaId) {
+                        if (!this.result[side].iaIds) {
+                            this.result[side].iaIds = {
+                                details: []
+                            }
+                            // TODO - Get the IA data and add it here
+                        }
+                        this.result[side].iaIds.details.push(detail.iaID)
+                    }
+                }
+
+                // Setup (run when creating a new ItemFromDetail)
+                this.id = detail.iId;
+                this.desc = detail.desc;
+                // TODO - Add Metadata - UPC, Category, Sub Cat and Sub Sub Cat
+                this.addDetailAndIA(side, type, detail)
+
+                // A function for determining the outcome from all data sources for this item
+                this.determineOutcome = function() {
+                    // TODO - Go through all data sources and calculate the outcome, both the overall outcome and
+                    //    the outcome for each side AND each side-type combination
+                    // Add outcome object to each side and type (next to the details and IAs
+                    this.outcome = {}
+                }
+
+                // A function for flattening the item to a row (for display
+                this.toDataTableRow = function () {
+                    // TODO
+                    const row = []
+                    return row
+                };
+
+                // A function for flattening the item to a Excel row using ExcelJS
+                this.toExcelJSRow = function () {
+                    // TODO
+                    const row = []
+                    return row
+                };
+            }
+
+            function calculateResults() {
+                /* Turn the count details into item information. We don't want to do this asynchronously, as the order of
+                   counts is important for establishing the latest item price
+                   can be important (if there is a recount of a recount)
+                 */
+                if (data.client.foh) {
+                    // There is a FoH count - get the sections before getting the detail
+                    getCountSections()
+                }
+                const items = {} // Key is internal ID
+                // TODO - does this need to call the getCountDetails first (could it be stale)?
+                const sideParentIds = {}
+                if (data.client.boh) {
+                    sideParentIds.boh = data.client.boh
+                }
+                if (data.client.foh) {
+                    sideParentIds.foh = data.client.foh
+                }
+                sideParentIds.forEach(function (side) {
+                    /*
+                     Get data from the parent
+                     The counts from children have been aggregated to the parent in getCountDetails()
+                     Child counts can, therefore, be ignored here
+                    */
+                    data.server.count.details[sideParentIds].forEach(function (detail) {
+                        if (!items[detail['iId']]) {
+                            items[detail['iId']] = new ItemFromDetail(side, 'U', detail)
+                        }
+                    })
+                    // Now the recounts (which all have children, regardless of their size)
+                    const recountIds = data.server.count.headers[data.client[side]].recounts
+                    recountIds.forEach(function (recountId) {
+                       data.server.count.details[recountId].forEach(function (detail) {
+                           // The item already exists from the count
+                           items[detail['iId']].addDetailAndIA(side, 'R', detail)
+                       })
+                    })
+                })
+                // Now, having collected the data for each item, determine the outcome
+                data.server.items = items
+                data.status.currentlyProcessing = false
+            }
+
+
+          function asPercent(value, toFixedDigits=0) {
+            if (!value) { return '' }
+            if (Number.isFinite(value)) {
+                return (value * 100).toFixed(toFixedDigits) + '%'
+            } else {
+                return value.toString()
+            }
+          }
+
+          const currencyFormatter = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' })
+
+          function asCurrency(value) {
+            if (!value) { return '' }
+            if (Number.isFinite(value)) {
+                return currencyFormatter.format(value)
+            } else {
+                return value.toString()
+            }
+          }
+
+          const numberFormatter = new Intl.NumberFormat('en-AU');
+
+          function asNumber(value) {
+              if (!value) { return '' }
+              if (Number.isFinite(value)) {
+                return numberFormatter.format(value)
+            }
+            return value
+          }
+
+          return {
+            data,
+            allDetailsReceived,
+            calculateResults,
+            countResultEstimate,
+            getCountDetails,
+            getHeadersThenDetails,
+            getCountSections,
+            isCurrentlyProcessing,
+            sidesOfHouse,
+            asCurrency,
+            asNumber,
+            asPercent,
+            parentCountIsComplete,
+            urlOrigin,
+            validateStockCount
+        }
+    }
+})
+    /*app.config.errorHandler = (err, instance, info) => {
+        // handle error, e.g. report to a service
+        alert('There has been an error. With the system. This might be old data stored in your browser, which will be cleared.')
+        window.localStorage.removeItem('clientData')
+        window.location.reload()
+        //console.error(err.toString())
+        //console.log(info.toString())
+    }
+    */
+
+    app.component('my-component', {
+        template: '<p>A custom component!</p>'
+    })
+
+
+    app.use(vuetify).mount('#app')
+
+</script>
