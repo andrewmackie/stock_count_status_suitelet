@@ -504,17 +504,12 @@
                 }
             })
 
-            let urlOrigin = 'https://5726127.app.netsuite.com'
-            let urlScript = `https://5726127.app.netsuite.com/app/site/hosting/scriptlet.nl?script=2940&deploy=1`
-
             onMounted(() => {
                 try {
                     urlOrigin = window.location.origin
                 } catch (e) {
                     console.log(e)
                 }
-
-                urlScript = `${urlOrigin}/app/site/hosting/scriptlet.nl?script=2940&deploy=1`
 
                 // Retrieve local storage
                 // Don't get the boh and foh yet - wait for the counts data to be received first
@@ -532,6 +527,9 @@
                     }
                 })
             })
+
+            let urlScript = window.location.href
+            let urlOrigin = urlScript.replace(/\/app\/site.*$/, '')
 
             const sidesOfHouse = computed(() => {
                 let sides = []

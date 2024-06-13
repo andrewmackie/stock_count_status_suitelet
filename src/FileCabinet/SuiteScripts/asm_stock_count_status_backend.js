@@ -23,8 +23,8 @@ define(
                         const countIdArr = decodeURIComponent(context.request.parameters.countIds);
                         writeData(context, getStockCountSections(countIdArr));
                     } else {
-                        // return asm_stocktake_reporting.html
-                        const fileId = '3383020' // TODO - Fix hardcoded fileId
+                        // return asm_stock_count_status_frontend.html
+                        const fileId = '4135932' // TODO - Fix hardcoded fileId
                         const vueAppFile = file.load({id: fileId});
                         context.response.setHeader({name: 'Content-Type', value: 'text/html'});
                         context.response.write({output: vueAppFile.getContents()});
